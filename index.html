@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Test</title>
+  <script src="https://js.puter.com/v2/"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -36,6 +37,18 @@
       margin-bottom: 28px;
     }
 
+    .badge {
+      display: inline-block;
+      background: #34c759;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
     .card {
       background: white;
       border-radius: 12px;
@@ -54,7 +67,7 @@
       letter-spacing: 0.04em;
     }
 
-    input, textarea {
+    textarea {
       width: 100%;
       border: 1px solid #d2d2d7;
       border-radius: 8px;
@@ -65,20 +78,32 @@
       background: #f5f5f7;
       outline: none;
       transition: border-color 0.2s;
+      resize: vertical;
+      min-height: 100px;
     }
 
-    input:focus, textarea:focus {
+    textarea:focus {
       border-color: #0071e3;
       background: white;
     }
 
-    input[type="password"] {
-      letter-spacing: 0.1em;
+    select {
+      width: 100%;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: #1d1d1f;
+      background: #f5f5f7;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 100px;
+    select:focus {
+      border-color: #0071e3;
+      background: white;
     }
 
     button {
@@ -135,34 +160,34 @@
     .status.error { color: #ff3b30; }
     .status.success { color: #34c759; }
 
-    .model-select {
-      width: 100%;
-      border: 1px solid #d2d2d7;
+    .info-box {
+      background: #f0f7ff;
+      border: 1px solid #b8d9f8;
       border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      color: #1d1d1f;
-      background: #f5f5f7;
-      outline: none;
-      appearance: none;
-      cursor: pointer;
-    }
-
-    .model-select:focus {
-      border-color: #0071e3;
-      background: white;
+      padding: 12px;
+      font-size: 0.82rem;
+      color: #0071e3;
+      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>AI Test</h1>
-    <p class="subtitle">Powered by Llama 3.1 · Hugging Face</p>
+    <h1>AI Test <span class="badge">GRATIS</span></h1>
+    <p class="subtitle">Powered by Puter.js · Sin API Key necesaria</p>
+
+    <div class="info-box">
+      ✅ No necesitás API Key ni saldo. Puter.js maneja todo automáticamente.
+    </div>
 
     <div class="card">
-      <label>API Key de Hugging Face</label>
-      <input type="password" id="apiKey" placeholder="hf_..." value="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"/>
+      <label>Modelo</label>
+      <select id="model">
+        <option value="gpt-4o-mini">GPT-4o Mini (rápido)</option>
+        <option value="gpt-4o">GPT-4o (inteligente)</option>
+        <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+      </select>
     </div>
 
     <div class="card">
@@ -180,18 +205,12 @@
 
   <script>
     async function sendMessage() {
-      const apiKey = document.getElementById('apiKey').value.trim();
       const prompt = document.getElementById('prompt').value.trim();
+      const model = document.getElementById('model').value;
       const btn = document.getElementById('sendBtn');
       const status = document.getElementById('status');
       const responseCard = document.getElementById('responseCard');
       const responseText = document.getElementById('responseText');
-
-      if (!apiKey) {
-        status.textContent = 'Ingresá tu API Key de Google.';
-        status.className = 'status error';
-        return;
-      }
 
       if (!prompt) {
         status.textContent = 'Escribí un mensaje primero.';
@@ -201,41 +220,19 @@
 
       btn.disabled = true;
       btn.textContent = 'Enviando...';
-      status.textContent = 'Conectando con Gemini...';
+      status.textContent = 'Conectando...';
       status.className = 'status';
       responseCard.style.display = 'none';
 
       try {
-        const res = await fetch(
-          'https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3.1-8B-Instruct/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + apiKey
-            },
-            body: JSON.stringify({
-              model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
-              messages: [{ role: 'user', content: prompt }],
-              max_tokens: 1024
-            })
-          }
-        );
-
-        const data = await res.json();
-
-        if (data.error) {
-          status.textContent = 'Error: ' + (data.error.message || data.error);
-          status.className = 'status error';
-        } else {
-          const reply = data.choices?.[0]?.message?.content || 'Sin respuesta';
-          responseText.textContent = reply;
-          responseCard.style.display = 'block';
-          status.textContent = '✓ Respuesta recibida';
-          status.className = 'status success';
-        }
+        const response = await puter.ai.chat(prompt, { model: model });
+        const reply = response?.message?.content?.[0]?.text || response?.toString() || 'Sin respuesta';
+        responseText.textContent = reply;
+        responseCard.style.display = 'block';
+        status.textContent = '✓ Respuesta recibida';
+        status.className = 'status success';
       } catch (err) {
-        status.textContent = 'Error de conexión. Revisá tu API Key.';
+        status.textContent = 'Error: ' + err.message;
         status.className = 'status error';
       }
 
@@ -248,4 +245,4 @@
     });
   </script>
 </body>
-</html>
+<
